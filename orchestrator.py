@@ -92,6 +92,33 @@ except (ImportError, ModuleNotFoundError):
     VirtualDrugScreening = None
     _HAS_DRUG = False
 
+# v3.0 新模块 — 线粒体动力学
+try:
+    from simulation.mitochondrial_dynamics import MitochondrialDynamicsModel
+    _HAS_MITO = True
+except (ImportError, ModuleNotFoundError):
+    MitochondrialDynamicsModel = None
+    _HAS_MITO = False
+
+# v3.0 新模块 — 亚细胞区室
+try:
+    from simulation.subcellular_compartments import SubcellularCompartmentsModel
+    _HAS_SUBCELL = True
+except (ImportError, ModuleNotFoundError):
+    SubcellularCompartmentsModel = None
+    _HAS_SUBCELL = False
+
+# v3.0 新模块 — mRNA/相分离
+try:
+    from regulation.rna_dynamics import RNADynamicsModel
+    _HAS_RNA = True
+except (ImportError, ModuleNotFoundError):
+    RNADynamicsModel = None
+    _HAS_RNA = False
+
+    VirtualDrugScreening = None
+    _HAS_DRUG = False
+
 
 class VirtualNPCell:
     """
@@ -131,6 +158,9 @@ class VirtualNPCell:
         self.m6a_model = None
         self.coupled_model = None
         self.drug_screening = None
+        self.mito_model = None
+        self.subcellular_model = None
+        self.rna_model = None
 
         # 运行缓存
         self._module_results = {}
@@ -157,7 +187,7 @@ class VirtualNPCell:
                 'spatial'           — SpatialTranscriptomics (空间转录组)
                 'm6a'               — M6AEpigeneticModel (m6A表观)
                 'couple'            — NPCoupledModel (多尺度耦合, 可选)
-                'drug_screen'       — VirtualDrugScreening (虚拟药物筛选, 可选)
+                'drug_screen'       — VirtualDrugScreening (虚拟药物筛选, 可选)\n                'mitochondrial'     — MitochondrialDynamicsModel (线粒体动力学)\n                'subcellular'       — SubcellularCompartmentsModel (亚细胞区室)\n                'rna_dynamics'      — RNADynamicsModel (mRNA/相分离)
 
         Returns:
             dict: { 'module': name, 'success': bool, 'result': ..., 'error': str }
@@ -175,6 +205,10 @@ class VirtualNPCell:
             # 可选
             'couple': ('coupled_model', NPCoupledModel, _HAS_COUPLED),
             'drug_screen': ('drug_screening', VirtualDrugScreening, _HAS_DRUG),
+            # v3.0 亚细胞模块
+            'mitochondrial': ('mito_model', MitochondrialDynamicsModel, _HAS_MITO),
+            'subcellular': ('subcellular_model', SubcellularCompartmentsModel, _HAS_SUBCELL),
+            'rna_dynamics': ('rna_model', RNADynamicsModel, _HAS_RNA),
         }
 
         if module_name not in module_map:
@@ -275,6 +309,44 @@ class VirtualNPCell:
                           for i in range(len(sim_result['var_names']))}
                 result = {**sim_result, 'steady_state': steady, 'model': model}
 
+            elif module_name == 'mitochondrial':
+                if hasattr(model, 'simulate'):
+                    pert = kwargs.get('perturbation', None)
+                    sim_result = model.simulate(perturbation=pert)
+                    yf = sim_result['y'][:, -1]
+                    state = model.get_mito_state(yf)
+                    metrics = model.get_steady_state_metrics(yf)
+                    result = {
+                        'result': sim_result, 'y': sim_result['y'], 't': sim_result['t'],
+                        'mito_state': state, 'metrics': metrics, 'model': model,
+                    }
+                else:
+                    result = {'info': 'mitochondrial module loaded but simulate() not available', 'model': model}
+
+            elif module_name == 'subcellular':
+                if hasattr(model, 'simulate'):
+                    pert = kwargs.get('perturbation', None)
+                    sim_result = model.simulate(perturbation=pert)
+                    state = model.get_subcellular_state(sim_result['y'][:, -1])
+                    result = {
+                        'result': sim_result, 'y': sim_result['y'], 't': sim_result['t'],
+                        'subcellular_state': state, 'model': model,
+                    }
+                else:
+                    result = {'info': 'subcellular module loaded but simulate() not available', 'model': model}
+
+            elif module_name == 'rna_dynamics':
+                if hasattr(model, 'simulate'):
+                    pert = kwargs.get('perturbation', None)
+                    sim_result = model.simulate(perturbation=pert)
+                    state = model.get_transcriptome_state(sim_result['y'][:, -1])
+                    result = {
+                        'result': sim_result, 'y': sim_result['y'], 't': sim_result['t'],
+                        'rnai_state': state, 'model': model,
+                    }
+                else:
+                    result = {'info': 'rna_dynamics module loaded but simulate() not available', 'model': model}
+
             elif module_name == 'couple':
                 # NPCoupledModel.simulate() returns {'normal': {'t','y','steady_state'}, ...}
                 sim_type = kwargs.get('sim_type', 'normal')
@@ -353,6 +425,14 @@ class VirtualNPCell:
             "空间": "spatial_transcriptomics",
             "治疗靶点": "therapeutic_targets",
             "therapeutic": "therapeutic_targets",
+            "线粒体": "mitochondria",
+            "mitochondria": "mitochondria",
+            "亚细胞": "subcellular",
+            "内质网": "er_stress",
+            "er": "er_stress",
+            "rna": "rna_dynamics",
+            "相分离": "phase_separation",
+            "mrna": "rna_dynamics",
         }
         for key, val in topic_map.items():
             if key in topic.lower():
@@ -537,6 +617,9 @@ class VirtualNPCell:
             'spatial': 'IVD 空间转录组 — NP/AF/CEP 分区 + 伪时间 + 生态位',
             'couple': '多尺度耦合仿真 (可选)',
             'drug_screen': '虚拟药物筛选 (可选)',
+            'mitochondrial': '线粒体动力学 — 融合/分裂/Δψm/SIRT3/PINK1-Parkin/自噬/凋亡',
+            'subcellular': '亚细胞区室 — ER应激/UPR/核纤层/溶酶体/NLRP3/外泌体/cfDNA-STING',
+            'rna_dynamics': 'mRNA/相分离 — 应激颗粒/P-body/HuR-TTP/NEAT1/LLPS/翻译',
         }
         for mod, desc in module_info.items():
             status = '✅ 可用' if (globals().get(f'_HAS_{mod.upper().replace("SCREEN","DRUG")}', False) or
@@ -545,6 +628,12 @@ class VirtualNPCell:
                 status = '✅ 可用' if _HAS_COUPLED else '📦 未安装'
             elif mod == 'drug_screen':
                 status = '✅ 可用' if _HAS_DRUG else '📦 未安装'
+            elif mod == 'mitochondrial':
+                status = '✅ 可用' if _HAS_MITO else '📦 未安装'
+            elif mod == 'subcellular':
+                status = '✅ 可用' if _HAS_SUBCELL else '📦 未安装'
+            elif mod == 'rna_dynamics':
+                status = '✅ 可用' if _HAS_RNA else '📦 未安装'
             lines.append(f"- `{mod}` {status} — {desc}\n")
 
         lines.append("\n## 📝 使用示例\n")

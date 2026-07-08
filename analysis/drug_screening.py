@@ -324,6 +324,155 @@ class VirtualDrugScreening:
             reference="-",
         )
 
+        # ------------------------------------------------------------------
+        # 13. MitoQ — 线粒体靶向泛醌抗氧化剂
+        #    文献: Redox Biol 2019 — MitoQ→线粒体ROS↓→mtDNA损伤↓→ETC功能保护
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="MitoQ",
+            target="线粒体ROS (matrix-facing)",
+            mechanism="三苯基膦(TPP)阳离子靶向线粒体基质, 泛醌被复合体II还原为泛酚→清除O2-•(超氧化物), 阻断ROS→mtDNA→ETC正反馈环",
+            params={
+                "senescence": {"rox_inh": 0.5, "Nox4_KD": 0.3},
+                "metabolism": {"mito_protect": None},
+                "signaling": {"nfkb_inh": 0.3},
+                "ecm": {"mmp_inh": 0.2, "agg_synth_boost": 0.15},
+                "mitochondrial": {"mito_ros_clear": 0.6, "mito_membrane_protect": 0.3},
+            },
+            category="线粒体靶向-抗氧化",
+            reference="MitoQ→线粒体ROS↓→mtDNA损伤↓→ETC功能保护; NP细胞退变模型(Redox Biol 2019)",
+        )
+
+        # ------------------------------------------------------------------
+        # 14. Mdivi-1 — Drp1 抑制剂 (线粒体分裂抑制剂)
+        #    文献: Spine 2020 — Mdivi-1→Drp1→抑制线粒体分裂→减少凋亡
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="Mdivi-1",
+            target="Drp1 (DNM1L)",
+            mechanism="选择性抑制 Drp1 GTP酶活性→抑制线粒体分裂→减少碎片化→维持线粒体网络完整性→降低CytC释放→抗凋亡",
+            params={
+                "senescence": {"mito_stab": 0.5, "senolytic": 0.2},
+                "signaling": {"apop_inh": 0.4},
+                "ecm": {"cell_survival": 0.3},
+                "mitochondrial": {"mito_fission_inh": 0.7, "mito_fusion_boost": 0.2},
+            },
+            category="线粒体靶向-分裂抑制",
+            reference="Mdivi-1→Drp1→抑制线粒体分裂→减少凋亡→IVD保护(Spine 2020)",
+        )
+
+        # ------------------------------------------------------------------
+        # 15. Urolithin A — 线粒体自噬诱导剂
+        #    文献: Nat Metab 2021 — Urolithin A→PINK1/Parkin→线粒体自噬→衰老衰减
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="Urolithin A",
+            target="PINK1/Parkin 线粒体自噬",
+            mechanism="激活 PINK1/Parkin 介导的选择性线粒体自噬→清除受损线粒体→维持线粒体质量控制→抑制NLRP3炎症小体→降低SASP",
+            params={
+                "senescence": {"mito_renew": 0.5, "senolytic": 0.3},
+                "signaling": {"nlrp3_inh": 0.4},
+                "ecm": {"cell_density_restore": 0.2},
+                "mitochondrial": {"mito_mitophagy_boost": 0.6, "mito_biogenesis_boost": 0.3},
+            },
+            category="线粒体靶向-自噬",
+            reference="Urolithin A→PINK1/Parkin→线粒体自噬→衰老衰减; NP细胞模型(Nat Metab 2021)",
+        )
+
+        # ------------------------------------------------------------------
+        # 16. SS-31 (Elamipretide) — 线粒体靶向肽
+        #    文献: J Orthop Res 2021 — SS-31→心磷脂→稳定ETC→ROS↓
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="SS-31",
+            target="线粒体内膜心磷脂(CL)",
+            mechanism="靶向线粒体内膜心磷脂→稳定ETC超复合体组装→减少复合体I/III电子泄漏→降低mtROS→保护Δψm→维持ATP合成",
+            params={
+                "metabolism": {"atp_boost": 0.4},
+                "senescence": {"rox_inh": 0.4},
+                "signaling": {"nfkb_inh": 0.2},
+                "ecm": {"agg_synth_boost": 0.2},
+                "mitochondrial": {"mito_membrane_protect": 0.7, "mito_ros_clear": 0.4},
+            },
+            category="线粒体靶向-膜稳定",
+            reference="SS-31→心磷脂→稳定ETC→ROS↓; 椎间盘线粒体保护(J Orthop Res 2021)",
+        )
+
+        # ------------------------------------------------------------------
+        # 17. BAM15 — 线粒体解偶联剂 (轻度)
+        #    文献: Cell Rep 2020概念 — BAM15→轻度解偶联→ROS↓→代谢灵活性↑
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="BAM15",
+            target="线粒体解偶联蛋白UCP1模拟",
+            mechanism="轻度线粒体解偶联→质子漏→降低Δψm→减少ETC电子泄漏→降低mtROS→同时维持ATP合成效率→改善代谢灵活性",
+            params={
+                "metabolism": {"uncouple_protect": None},
+                "senescence": {"rox_inh": 0.35},
+                "signaling": {"nfkb_inh": 0.15},
+                "ecm": {"glyc_protect": 0.2},
+                "mitochondrial": {"mito_mild_uncouple": 0.4, "mito_ros_clear": 0.35},
+            },
+            category="线粒体靶向-解偶联",
+            reference="BAM15→轻度解偶联→ROS↓→代谢灵活性↑; NP细胞退变(Cell Rep 2020概念)",
+        )
+
+        # ------------------------------------------------------------------
+        # 18. AICAR — AMPK 激活剂 (线粒体生物发生)
+        #    文献: Cell Death Dis 2020 — AICAR→AMPK→PGC-1α→线粒体生物发生
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="AICAR",
+            target="AMPK",
+            mechanism="模拟AMP→激活AMPK→磷酸化PGC-1α→NRF1/TFAM→线粒体生物发生→恢复线粒体质量+融合→改善能量代谢",
+            params={
+                "metabolism": {"AMPK_act": None},
+                "senescence": {"senolytic": 0.2},
+                "signaling": {"ampk_act": 0.7},
+                "ecm": {"agg_synth_boost": 0.25},
+                "mitochondrial": {"mito_biogenesis_boost": 0.7, "mito_fusion_boost": 0.3},
+            },
+            category="线粒体靶向-生物发生",
+            reference="AICAR→AMPK→PGC-1α→线粒体生物发生; NP退变(Cell Death Dis 2020)",
+        )
+
+        # ------------------------------------------------------------------
+        # 19. Niclosamide (对照) — 线粒体解偶联剂 (强)
+        #    文献: ACS Chem Biol 2018 — Niclosamide→强解偶联→ATP↓→细胞死亡(负对照)
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="Niclosamide",
+            target="线粒体解偶联 (强效)",
+            mechanism="强效线粒体解偶联剂→Δψm剧烈下降→ATP耗竭→PINK1稳定化→过度线粒体自噬→细胞死亡（负对照）",
+            params={
+                "metabolism": {"rotenone": None},
+                "senescence": {"oxidative_stress": 0.5},
+                "ecm": {"degen_accel": 0.4},
+                "mitochondrial": {"mito_strong_uncouple": 0.8, "mito_membrane_depolarize": 0.7},
+            },
+            category="负对照",
+            reference="Niclosamide→强解偶联→ATP↓→细胞死亡(对照; ACS Chem Biol 2018)",
+        )
+
+        # ------------------------------------------------------------------
+        # 20. Honokiol — SIRT3 激活剂
+        #    文献: Nat Comms 2014; Aging Cell 2022 — Honokiol→SIRT3→SOD2去乙酰化→ROS↓
+        # ------------------------------------------------------------------
+        self.add_drug(
+            name="Honokiol",
+            target="SIRT3 (线粒体去乙酰化酶)",
+            mechanism="直接激活线粒体SIRT3→SOD2 K68去乙酰化→SOD2活性↑(3倍)→超氧化物清除↑→抑制mtROS→同时IDH2去乙酰化→NADPH↑→谷胱甘肽再生",
+            params={
+                "senescence": {"rox_inh": 0.45},
+                "signaling": {"sirt3_act": 0.6},
+                "metabolism": {"mito_protect": None},
+                "ecm": {"agg_synth_boost": 0.2},
+                "mitochondrial": {"mito_sirt3_act": 0.7, "mito_ros_clear": 0.45, "mito_fusion_boost": 0.2},
+            },
+            category="线粒体靶向-SIRT3",
+            reference="Honokiol→SIRT3→SOD2去乙酰化→ROS↓; 线粒体保护(Nat Comms 2014; Aging Cell 2022)",
+        )
+
     def list_drugs(self) -> List[dict]:
         """列出所有已注册药物"""
         return list(self.drugs.values())
