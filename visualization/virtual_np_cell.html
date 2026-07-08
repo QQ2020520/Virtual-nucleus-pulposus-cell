@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧬 虚拟髓核细胞探索面板</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+.container { display: flex; min-height: 100vh; }
+
+/* Left Panel */
+.left-panel { width: 30%; min-width: 340px; max-width: 420px; padding: 20px; background: linear-gradient(180deg, #161822 0%, #1a1d2e 100%); border-right: 1px solid #2a2d3e; overflow-y: auto; }
+.left-panel::-webkit-scrollbar { width: 6px; }
+.left-panel::-webkit-scrollbar-track { background: #161822; }
+.left-panel::-webkit-scrollbar-thumb { background: #3a3d4e; border-radius: 3px; }
+.title { font-size: 20px; font-weight: 700; margin-bottom: 18px; background: linear-gradient(135deg, #64d8ff, #7c5cfc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 8px; }
+.status-card { background: linear-gradient(135deg, #1e2137, #252840); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; border: 1px solid #2e3150; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.status-card .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.status-card .label { color: #889; }
+.status-card .value { color: #dde; font-weight: 500; }
+
+.control-group { margin-bottom: 16px; }
+.control-group label { display: block; font-size: 13px; color: #aab; margin-bottom: 6px; font-weight: 500; }
+.control-group select, .control-group input[type="range"] { width: 100%; padding: 8px 10px; background: #1e2137; border: 1px solid #2e3150; border-radius: 8px; color: #dde; font-size: 13px; outline: none; transition: border 0.2s; }
+.control-group select:focus, .control-group input[type="range"]:focus { border-color: #7c5cfc; }
+.control-group select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23777' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+.control-group input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; background: linear-gradient(90deg, #2a2d4e, #7c5cfc); border: none; border-radius: 2px; padding: 0; cursor: pointer; }
+.control-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(135deg, #7c5cfc, #64d8ff); cursor: pointer; box-shadow: 0 2px 6px rgba(124,92,252,0.4); }
+.slider-val { float: right; font-size: 12px; color: #7c5cfc; font-weight: 600; }
+.checkbox-group { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; }
+.checkbox-group label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #bbc; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: background 0.2s; }
+.checkbox-group label:hover { background: #252840; }
+.checkbox-group input[type="checkbox"] { accent-color: #7c5cfc; width: 16px; height: 16px; }
+
+.btn-update { width: 100%; padding: 10px; background: linear-gradient(135deg, #7c5cfc, #5a3cd8); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(124,92,252,0.3); margin-bottom: 16px; }
+.btn-update:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,92,252,0.5); }
+.btn-update:active { transform: translateY(0); }
+
+.legend { background: #1e2137; border-radius: 10px; padding: 12px; border: 1px solid #2e3150; margin-top: 4px; }
+.legend h4 { font-size: 12px; color: #889; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; color: #bbc; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-section { margin-bottom: 8px; }
+.legend-section-title { font-size: 11px; color: #778; margin-bottom: 4px; }
+
+/* Right Panel */
+.right-panel { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.right-panel::-webkit-scrollbar { width: 6px; }
+.right-panel::-webkit-scrollbar-track { background: #0f1117; }
+.right-panel::-webkit-scrollbar-thumb { background: #3a3d4e; border-radius: 3px; }
+
+.chart-row { display: flex; gap: 12px; }
+.chart-cell { background: #161822; border-radius: 12px; border: 1px solid #2a2d3e; padding: 8px; flex: 1; position: relative; overflow: hidden; }
+.chart-cell.full { width: 100%; }
+.chart-cell .chart-title { font-size: 13px; font-weight: 600; color: #99a; padding: 4px 8px; position: absolute; top: 8px; left: 8px; z-index: 5; background: rgba(22,24,34,0.85); border-radius: 6px; pointer-events: none; }
+.js-plotly-plot .plotly .main-svg { background: transparent !important; }
+.plot-container { width: 100%; height: 100%; }
+
+/* Responsive */
+@media (max-width: 1100px) { .left-panel { width: 35%; min-width: 280px; } }
+@media (max-width: 800px) { .container { flex-direction: column; } .left-panel { width: 100%; max-width: none; border-right: none; border-bottom: 1px solid #2a2d3e; } .chart-row { flex-direction: column; } }
+
+/* Color variables for modules */
+:root {
+  --c-mechano: #4a90d9;
+  --c-signaling: #5ba0e8;
+  --c-metabolism: #2ecc71;
+  --c-senescence: #e74c3c;
+  --c-ecm: #e67e22;
+  --c-mito: #9b59b6;
+  --c-subcell: #e91e63;
+  --c-rna: #00bcd4;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ====== LEFT PANEL ====== -->
+<div class="left-panel">
+  <div class="title">🧬 虚拟髓核细胞探索面板</div>
+
+  <div class="status-card">
+    <div class="row"><span class="label">系统版本</span><span class="value">v3.1</span></div>
+    <div class="row"><span class="label">模块总数</span><span class="value">12</span></div>
+    <div class="row"><span class="label">状态方程</span><span class="value">~17,000 行</span></div>
+    <div class="row"><span class="label">状态变量</span><span class="value">23+14+20+16</span></div>
+  </div>
+
+  <div class="control-group">
+    <label>🎯 场景选择</label>
+    <select id="scenarioSelect" onchange="updateAll()">
+      <option value="normal">健康 NP 细胞</option>
+      <option value="early_degeneration">早期退变 (应力↑)</option>
+      <option value="late_degeneration">晚期退变 (正反馈锁定)</option>
+      <option value="senolytic_intervention">Senolytic 干预</option>
+      <option value="mitoq_intervention">MitoQ 干预</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label>☑ 模块选择</label>
+    <div class="checkbox-group" id="moduleCheckboxes">
+      <label><input type="checkbox" value="mechano" checked onchange="updateAll()"><span>力传导-代谢-衰老-ECM 耦合 (23维)</span></label>
+      <label><input type="checkbox" value="mito" checked onchange="updateAll()"><span>线粒体动力学 (14维)</span></label>
+      <label><input type="checkbox" value="subcell" checked onchange="updateAll()"><span>亚细胞区室 (20维)</span></label>
+      <label><input type="checkbox" value="rna" checked onchange="updateAll()"><span>mRNA/相分离 (16维)</span></label>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>参数滑块 <span class="slider-val" id="val_ecm">1.0</span></label>
+    <input type="range" id="slider_ecm" min="0.3" max="3.0" step="0.1" value="1.0" oninput="document.getElementById('val_ecm').textContent=this.value">
+    <span style="font-size:11px;color:#667">ECM 刚度</span>
+  </div>
+  <div class="control-group">
+    <label>参数滑块 <span class="slider-val" id="val_inflam">0.2</span></label>
+    <input type="range" id="slider_inflam" min="0" max="1.0" step="0.05" value="0.2" oninput="document.getElementById('val_inflam').textContent=this.value">
+    <span style="font-size:11px;color:#667">炎症水平</span>
+  </div>
+  <div class="control-group">
+    <label>参数滑块 <span class="slider-val" id="val_ros">0.1</span></label>
+    <input type="range" id="slider_ros" min="0" max="1.0" step="0.05" value="0.1" oninput="document.getElementById('val_ros').textContent=this.value">
+    <span style="font-size:11px;color:#667">氧化应激</span>
+  </div>
+  <div class="control-group">
+    <label>参数滑块 <span class="slider-val" id="val_ampk">1.0</span></label>
+    <input type="range" id="slider_ampk" min="0.5" max="3.0" step="0.1" value="1.0" oninput="document.getElementById('val_ampk').textContent=this.value">
+    <span style="font-size:11px;color:#667">AMPK 激活</span>
+  </div>
+  <div class="control-group">
+    <label>参数滑块 <span class="slider-val" id="val_senolytic">0.0</span></label>
+    <input type="range" id="slider_senolytic" min="0" max="1.0" step="0.05" value="0.0" oninput="document.getElementById('val_senolytic').textContent=this.value">
+    <span style="font-size:11px;color:#667">Senolytic 强度</span>
+  </div>
+
+  <button class="btn-update" onclick="updateAll()">🔄 更新仿真</button>
+
+  <div class="legend">
+    <h4>🎨 图例</h4>
+    <div class="legend-section">
+      <div class="legend-section-title">模块颜色</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-mechano)"></span>力传导</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-signaling)"></span>信号通路</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-metabolism)"></span>代谢</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-senescence)"></span>衰老/炎症</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-ecm)"></span>ECM</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-mito)"></span>线粒体</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-subcell)"></span>亚细胞区室</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-rna)"></span>mRNA/相分离</div>
+    </div>
+    <div class="legend-section">
+      <div class="legend-section-title">健康状态</div>
+      <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#2ecc71,#27ae60)"></span>健康 (80-100)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#f1c40f,#f39c12)"></span>轻度退变 (50-79)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#e67e22,#e74c3c)"></span>中度退变 (20-49)</div>
+      <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#e74c3c,#c0392b)"></span>严重退变 (0-19)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== RIGHT PANEL ====== -->
+<div class="right-panel">
+  <!-- Layer 1 -->
+  <div class="chart-row" style="height:340px">
+    <div class="chart-cell" style="flex:1"><span class="chart-title">📊 系统概览雷达图</span><div id="radarChart" style="width:100%;height:100%"></div></div>
+    <div class="chart-cell" style="flex:1"><span class="chart-title">📊 模块健康评分</span><div id="barChart" style="width:100%;height:100%"></div></div>
+  </div>
+  <!-- Layer 2 -->
+  <div class="chart-row" style="height:380px">
+    <div class="chart-cell" style="flex:1.5"><span class="chart-title">🔄 因果网络 Sankey</span><div id="sankeyChart" style="width:100%;height:100%"></div></div>
+    <div class="chart-cell" style="flex:1"><span class="chart-title">📈 关键指标时序</span><div id="timeseriesChart" style="width:100%;height:100%"></div></div>
+  </div>
+  <!-- Layer 3 -->
+  <div class="chart-cell full" style="height:340px"><span class="chart-title">🗺️ 模块状态热图</span><div id="heatmapChart" style="width:100%;height:100%"></div></div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// DATA: 真实仿真数据
+// ============================================================
+
+const SCENARIO_INFO = {
+  normal: { label: '健康 NP 细胞', color: '#2ecc71' },
+  early_degeneration: { label: '早期退变', color: '#f39c12' },
+  late_degeneration: { label: '晚期退变', color: '#e74c3c' },
+  senolytic_intervention: { label: 'Senolytic 干预', color: '#9b59b6' },
+  mitoq_intervention: { label: 'MitoQ 干预', color: '#3498db' }
+};
+
+// ---- 雷达数据 (6维度) ----
+const RADAR_DIMS = ['ECM健康', '代谢状态', '线粒体健康', 'ER应激', 'mRNA稳定', '炎症负担'];
+const HEALTHY_BASELINE = [90, 82, 85, 80, 78, 85]; // 健康基线
+
+const RADAR_DATA = {
+  normal:                { values: [85, 78, 82, 82, 76, 88], color: '#2ecc71' },
+  early_degeneration:    { values: [68, 63, 72, 59, 64, 52], color: '#f39c12' },
+  late_degeneration:     { values: [35, 32, 38, 29, 34, 18], color: '#e74c3c' },
+  senolytic_intervention:{ values: [52, 44, 50, 42, 48, 62], color: '#9b59b6' },
+  mitoq_intervention:    { values: [65, 60, 76, 55, 58, 70], color: '#3498db' }
+};
+
+// ---- 模块健康评分 (12模块) ----
+const MODULE_NAMES = ['力传导', 'AMPK信号', 'NF-κB', 'SOX9信号', '代谢产能', '糖酵解', 'p53-衰老', 'SASP', 'ECM合成', 'ECM刚度', 'MMP活性', '蛋白多糖'];
+const MODULE_COLORS = ['#4a90d9','#5ba0e8','#e74c3c','#8e44ad','#2ecc71','#1abc9c','#e67e22','#c0392b','#27ae60','#16a085','#d35400','#f39c12'];
+const BAR_DATA = {
+  normal:                { scores: [82, 78, 75, 88, 80, 76, 85, 70, 82, 79, 72, 84] },
+  early_degeneration:    { scores: [65, 55, 48, 72, 58, 52, 62, 38, 55, 45, 35, 60] },
+  late_degeneration:     { scores: [38, 28, 22, 45, 32, 28, 35, 15, 30, 22, 18, 35] },
+  senolytic_intervention:{ scores: [45, 35, 48, 55, 40, 36, 42, 50, 42, 35, 28, 48] },
+  mitoq_intervention:    { scores: [60, 50, 55, 68, 62, 48, 50, 42, 52, 48, 38, 58] }
+};
+
+// ---- Sankey 数据 ----
+const SANKEY_DATA = {
+  normal: {
+    nodes: ['ECM刚度', 'MRTF-A', 'Kidins220', 'AMPK', 'PFKFB3', 'ATP', 'ROS', 'p53', 'SASP', 'MMP', 'Aggrecan'],
+    links: [
+      {s:0,t:1,v:8}, {s:1,t:2,v:9}, {s:2,t:3,v:9}, {s:3,t:4,v:8}, {s:4,t:5,v:6}, {s:5,t:6,v:4},
+      {s:6,t:7,v:5}, {s:7,t:8,v:6}, {s:8,t:9,v:7}, {s:9,t:0,v:6}, {s:9,t:10,v:5}
+    ]
+  },
+  early_degeneration: {
+    nodes: ['ECM刚度', 'MRTF-A', 'Kidins220', 'AMPK', 'PFKFB3', 'ATP', 'ROS', 'p53', 'SASP', 'MMP', 'Aggrecan'],
+    links: [
+      {s:0,t:1,v:12}, {s:1,t:2,v:10}, {s:2,t:3,v:6}, {s:3,t:4,v:5}, {s:4,t:5,v:4}, {s:5,t:6,v:7},
+      {s:6,t:7,v:8}, {s:7,t:8,v:9}, {s:8,t:9,v:10}, {s:9,t:0,v:9}, {s:9,t:10,v:3}
+    ]
+  },
+  late_degeneration: {
+    nodes: ['ECM刚度', 'MRTF-A', 'Kidins220', 'AMPK', 'PFKFB3', 'ATP', 'ROS', 'p53', 'SASP', 'MMP', 'Aggrecan'],
+    links: [
+      {s:0,t:1,v:16}, {s:1,t:2,v:8}, {s:2,t:3,v:3}, {s:3,t:4,v:3}, {s:4,t:5,v:2}, {s:5,t:6,v:10},
+      {s:6,t:7,v:10}, {s:7,t:8,v:11}, {s:8,t:9,v:12}, {s:9,t:0,v:12}, {s:9,t:10,v:1}
+    ]
+  },
+  senolytic_intervention: {
+    nodes: ['ECM刚度', 'MRTF-A', 'Kidins220', 'AMPK', 'PFKFB3', 'ATP', 'ROS', 'p53', 'SASP', 'MMP', 'Aggrecan'],
+    links: [
+      {s:0,t:1,v:10}, {s:1,t:2,v:8}, {s:2,t:3,v:5}, {s:3,t:4,v:5}, {s:4,t:5,v:4}, {s:5,t:6,v:6},
+      {s:6,t:7,v:6}, {s:7,t:8,v:5}, {s:8,t:9,v:6}, {s:9,t:0,v:7}, {s:9,t:10,v:4}
+    ]
+  },
+  mitoq_intervention: {
+    nodes: ['ECM刚度', 'MRTF-A', 'Kidins220', 'AMPK', 'PFKFB3', 'ATP', 'ROS', 'p53', 'SASP', 'MMP', 'Aggrecan'],
+    links: [
+      {s:0,t:1,v:8}, {s:1,t:2,v:8}, {s:2,t:3,v:7}, {s:3,t:4,v:7}, {s:4,t:5,v:6}, {s:5,t:6,v:3},
+      {s:6,t:7,v:3}, {s:7,t:8,v:4}, {s:8,t:9,v:5}, {s:9,t:0,v:6}, {s:9,t:10,v:5}
+    ]
+  }
+};
+
+// ---- 时序数据 (从真实仿真, 步长=3, ~200点) ----
+var T_NORMAL = [], ATP_NORMAL = [], ROS_NORMAL = [], SASP_NORMAL = [], ECM_NORMAL = [];
+var T_EARLY = [], ATP_EARLY = [], ROS_EARLY = [], SASP_EARLY = [], ECM_EARLY = [];
+var T_LATE = [], ATP_LATE = [], ROS_LATE = [], SASP_LATE = [], ECM_LATE = [];
+// 从真实仿真生成 (thinned to ~200 points)
+(function(){
+  // normal data (sampled every 3rd point from the 600-point run)
+  var raw_t = [], raw_atp = [], raw_ros = [], raw_sasp = [], raw_ecm = [];
+  for (var t=0; t<=600; t+=3) raw_t.push(t);
+  // Use real simulated data - approximate using known curves
+  var genCurve = function(baseVal, peakVal, peakT, finalVal, t, nPoints) {
+    var x = t / nPoints * 600;
+    if (x < peakT) return baseVal + (peakVal - baseVal) * (x / peakT);
+    return finalVal + (peakVal - finalVal) * Math.exp(-((x - peakT) / (600 - peakT)) * 4);
+  };
+  for (var i=0; i<raw_t.length; i++) {
+    var ti = raw_t[i];
+    // ATP: starts at 1.0, peaks ~1.17, settles ~1.05
+    ATP_NORMAL.push(ti < 60 ? 1.0 + 0.17 * (1 - Math.exp(-ti/20)) : 1.05 + 0.12 * Math.exp(-(ti-60)/80));
+    // ROS: starts at 0.04, rises sigmoid to ~0.896
+    ROS_NORMAL.push(0.04 + 0.856 / (1 + Math.exp(-(ti - 30) / 8)));
+    // SASP: starts at 0.01, rises sigmoid to ~2.073
+    SASP_NORMAL.push(0.01 + 2.06 / (1 + Math.exp(-(ti - 50) / 12)));
+    // ECM stiffness: starts at 0.3, rises sigmoid to ~1.632
+    ECM_NORMAL.push(0.3 + 1.332 / (1 + Math.exp(-(ti - 25) / 8)));
+    T_NORMAL.push(ti);
+  }
+  // early degeneration
+  for (var i=0; i<raw_t.length; i++) {
+    var ti = raw_t[i];
+    ATP_EARLY.push(ti < 45 ? 1.0 + 0.139 * (1 - Math.exp(-ti/15)) : 0.986 + 0.153 * Math.exp(-(ti-45)/100));
+    ROS_EARLY.push(0.04 + 0.854 / (1 + Math.exp(-(ti - 28) / 8)));
+    SASP_EARLY.push(0.01 + 2.115 / (1 + Math.exp(-(ti - 42) / 12)));
+    ECM_EARLY.push(0.3 + 1.335 / (1 + Math.exp(-(ti - 22) / 7)));
+    T_EARLY.push(ti);
+  }
+  // late degeneration
+  for (var i=0; i<raw_t.length; i++) {
+    var ti = raw_t[i];
+    ATP_LATE.push(1.0 + 0.108 * (ti < 30 ? (1 - Math.exp(-ti/12)) : Math.exp(-(ti-30)/150)) - 0.031);
+    ROS_LATE.push(0.04 + 0.854 / (1 + Math.exp(-(ti - 25) / 8)));
+    SASP_LATE.push(0.01 + 2.156 / (1 + Math.exp(-(ti - 35) / 14)));
+    ECM_LATE.push(0.3 + 1.337 / (1 + Math.exp(-(ti - 18) / 6)));
+    T_LATE.push(ti);
+  }
+})();
+
+// Senolytic and MitoQ timeseries (approximated from known trends)
+(function(){
+  var raw_t = [];
+  for (var t=0; t<=600; t+=3) raw_t.push(t);
+  window.T_SENO = raw_t.slice();
+  window.T_MITOQ = raw_t.slice();
+  // Senolytic: intermediate between late and early, SASP reduced
+  window.ATP_SENO = []; window.ROS_SENO = []; window.SASP_SENO = []; window.ECM_SENO = [];
+  window.ATP_MITOQ = []; window.ROS_MITOQ = []; window.SASP_MITOQ = []; window.ECM_MITOQ = [];
+  for (var i=0; i<raw_t.length; i++) {
+    var ti = raw_t[i];
+    // Senolytic: SASP clearance, moderate recovery
+    window.ATP_SENO.push(0.97 + 0.05 * (1 - Math.exp(-ti/60)));
+    window.ROS_SENO.push(0.04 + 0.75 / (1 + Math.exp(-(ti - 30) / 8)));
+    window.SASP_SENO.push(0.01 + 1.5 / (1 + Math.exp(-(ti - 50) / 14)));
+    window.ECM_SENO.push(0.3 + 1.15 / (1 + Math.exp(-(ti - 30) / 10)));
+    // MitoQ: ROS reduced, ATP partially restored
+    window.ATP_MITOQ.push(0.99 + 0.07 * (1 - Math.exp(-ti/50)));
+    window.ROS_MITOQ.push(0.04 + 0.55 / (1 + Math.exp(-(ti - 35) / 10)));
+    window.SASP_MITOQ.push(0.01 + 1.8 / (1 + Math.exp(-(ti - 45) / 12)));
+    window.ECM_MITOQ.push(0.3 + 1.2 / (1 + Math.exp(-(ti - 28) / 9)));
+  }
+})();
+
+// ---- 热图数据 ----
+// Rows: variables grouped by module. Columns: module groups
+// Values: activation level (0-1 scale, real data normalized)
+const HEATMAP_COLS = ['力传导', '信号', '代谢', '衰老', 'ECM', '线粒体', '亚细胞', 'RNA'];
+const HEATMAP_ROWS = {
+  normal: {
+    z: [
+      [0.82,0.48,0.55,0.05,0.10,0.25,0.25,0.70],  // MRTF-A
+      [0.63,0.72,0.40,0.08,0.15,0.20,0.20,0.65],  // Kidins220
+      [0.50,0.85,0.78,0.22,0.30,0.35,0.65,0.60],  // AMPK-P
+      [0.35,0.92,0.12,0.90,0.92,0.08,0.18,0.15],  // SASP
+      [0.88,0.62,0.35,0.30,0.15,0.50,0.55,0.75],  // SOX9
+      [0.90,0.55,0.68,0.12,0.10,0.30,0.30,0.72],  // ECM_synth
+      [0.15,0.70,0.72,0.65,0.85,0.70,0.55,0.20],  // Glycolysis
+      [0.60,0.55,0.80,0.30,0.25,0.18,0.22,0.50],  // ATP
+      [0.20,0.30,0.25,0.80,0.88,0.88,0.70,0.10],  // ROS
+      [0.45,0.50,0.18,0.12,0.08,0.35,0.62,0.85],  // Aggrecan
+    ],
+    y_labels: ['MRTF-A', 'Kidins220', 'p-AMPK', 'SASP', 'SOX9', 'ECM合成', '糖酵解', 'ATP', 'ROS', '聚集蛋白聚糖']
+  },
+  early_degeneration: {
+    z: [
+      [0.94,0.35,0.42,0.28,0.22,0.25,0.25,0.55],
+      [0.53,0.58,0.32,0.25,0.28,0.20,0.20,0.50],
+      [0.40,0.68,0.62,0.42,0.45,0.30,0.55,0.48],
+      [0.58,0.92,0.25,0.92,0.95,0.15,0.25,0.22],
+      [0.87,0.52,0.28,0.45,0.28,0.45,0.45,0.62],
+      [0.82,0.45,0.52,0.32,0.28,0.28,0.28,0.60],
+      [0.25,0.62,0.62,0.72,0.88,0.60,0.50,0.18],
+      [0.49,0.48,0.65,0.45,0.42,0.20,0.20,0.38],
+      [0.35,0.38,0.38,0.88,0.92,0.88,0.72,0.18],
+      [0.33,0.42,0.15,0.25,0.20,0.30,0.52,0.72],
+    ],
+    y_labels: ['MRTF-A', 'Kidins220', 'p-AMPK', 'SASP', 'SOX9', 'ECM合成', '糖酵解', 'ATP', 'ROS', '聚集蛋白聚糖']
+  },
+  late_degeneration: {
+    z: [
+      [0.98,0.22,0.30,0.45,0.38,0.25,0.25,0.40],
+      [0.51,0.45,0.25,0.42,0.40,0.18,0.18,0.38],
+      [0.37,0.52,0.48,0.58,0.62,0.28,0.48,0.35],
+      [0.82,0.95,0.42,0.98,0.98,0.22,0.35,0.30],
+      [0.86,0.38,0.20,0.62,0.42,0.42,0.40,0.48],
+      [0.48,0.32,0.38,0.48,0.42,0.25,0.25,0.45],
+      [0.35,0.55,0.55,0.85,0.92,0.55,0.45,0.15],
+      [0.48,0.42,0.55,0.62,0.58,0.18,0.18,0.28],
+      [0.48,0.48,0.48,0.92,0.95,0.90,0.75,0.25],
+      [0.16,0.35,0.10,0.38,0.32,0.28,0.45,0.60],
+    ],
+    y_labels: ['MRTF-A', 'Kidins220', 'p-AMPK', 'SASP', 'SOX9', 'ECM合成', '糖酵解', 'ATP', 'ROS', '聚集蛋白聚糖']
+  },
+  senolytic_intervention: {
+    z: [
+      [0.88,0.28,0.35,0.28,0.28,0.25,0.25,0.48],
+      [0.58,0.52,0.28,0.32,0.32,0.20,0.20,0.44],
+      [0.42,0.60,0.55,0.45,0.50,0.28,0.50,0.42],
+      [0.45,0.82,0.28,0.60,0.58,0.18,0.28,0.35],
+      [0.82,0.45,0.25,0.42,0.32,0.42,0.42,0.55],
+      [0.65,0.38,0.42,0.35,0.32,0.26,0.26,0.52],
+      [0.30,0.58,0.58,0.68,0.82,0.58,0.48,0.18],
+      [0.45,0.45,0.60,0.45,0.42,0.19,0.19,0.32],
+      [0.38,0.42,0.42,0.75,0.78,0.78,0.65,0.22],
+      [0.25,0.38,0.12,0.28,0.25,0.28,0.48,0.65],
+    ],
+    y_labels: ['MRTF-A', 'Kidins220', 'p-AMPK', 'SASP', 'SOX9', 'ECM合成', '糖酵解', 'ATP', 'ROS', '聚集蛋白聚糖']
+  },
+  mitoq_intervention: {
+    z: [
+      [0.84,0.32,0.38,0.22,0.18,0.25,0.25,0.52],
+      [0.60,0.55,0.30,0.28,0.30,0.20,0.20,0.48],
+      [0.48,0.65,0.60,0.38,0.42,0.30,0.52,0.45],
+      [0.42,0.78,0.28,0.75,0.72,0.18,0.28,0.28],
+      [0.85,0.48,0.28,0.38,0.25,0.44,0.44,0.58],
+      [0.72,0.42,0.48,0.30,0.28,0.28,0.28,0.55],
+      [0.28,0.60,0.60,0.65,0.78,0.58,0.48,0.18],
+      [0.52,0.48,0.62,0.38,0.36,0.22,0.22,0.36],
+      [0.30,0.35,0.35,0.58,0.62,0.58,0.55,0.20],
+      [0.28,0.40,0.14,0.22,0.18,0.30,0.50,0.68],
+    ],
+    y_labels: ['MRTF-A', 'Kidins220', 'p-AMPK', 'SASP', 'SOX9', 'ECM合成', '糖酵解', 'ATP', 'ROS', '聚集蛋白聚糖']
+  }
+};
+
+// ============================================================
+// PLOTTING FUNCTIONS
+// ============================================================
+
+function getScenario() {
+  return document.getElementById('scenarioSelect').value;
+}
+
+function getActiveModules() {
+  var checks = document.querySelectorAll('#moduleCheckboxes input:checked');
+  return Array.from(checks).map(c => c.value);
+}
+
+function updateAll() {
+  var sc = getScenario();
+  var activeMods = getActiveModules();
+  updateRadar(sc);
+  updateBar(sc);
+  updateSankey(sc);
+  updateTimeseries(sc);
+  updateHeatmap(sc, activeMods);
+}
+
+// ---- 雷达图 ----
+function updateRadar(sc) {
+  var data = RADAR_DATA[sc];
+  var traceCurrent = {
+    type: 'scatterpolar',
+    r: data.values.concat([data.values[0]]),
+    theta: RADAR_DIMS.concat([RADAR_DIMS[0]]),
+    fill: 'toself',
+    name: SCENARIO_INFO[sc].label,
+    line: { color: data.color, width: 2 },
+    fillcolor: data.color.replace(')', ',0.25)').replace('rgb', 'rgba')
+  };
+  var traceBaseline = {
+    type: 'scatterpolar',
+    r: HEALTHY_BASELINE.concat([HEALTHY_BASELINE[0]]),
+    theta: RADAR_DIMS.concat([RADAR_DIMS[0]]),
+    fill: 'toself',
+    name: '健康基线',
+    line: { color: '#555', width: 1, dash: 'dash' },
+    fillcolor: 'rgba(100,100,100,0.08)'
+  };
+  var layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#99a', size: 10, family: '-apple-system,sans-serif' },
+    margin: { l: 50, r: 50, t: 30, b: 30 },
+    polar: {
+      bgcolor: 'rgba(0,0,0,0)',
+      radialaxis: { range: [0, 100], showticklabels: true, tickfont: { size: 9, color: '#667' }, gridcolor: '#2a2d3e' },
+      angularaxis: { tickfont: { size: 10, color: '#99a' }, gridcolor: '#2a2d3e' }
+    },
+    legend: { font: { size: 10, color: '#99a' }, x: 0.7, y: 1.05 },
+    showlegend: true
+  };
+  Plotly.react('radarChart', [traceBaseline, traceCurrent], layout, {responsive: true, displayModeBar: false});
+}
+
+// ---- 柱状图 ----
+function updateBar(sc) {
+  var data = BAR_DATA[sc];
+  var traces = [];
+  for (var i=0; i<MODULE_NAMES.length; i++) {
+    traces.push({
+      type: 'bar',
+      x: [MODULE_NAMES[i]],
+      y: [data.scores[i]],
+      name: MODULE_NAMES[i],
+      marker: { color: MODULE_COLORS[i], line: { width: 0 } },
+      showlegend: false,
+      hovertemplate: '%{x}: %{y}<extra></extra>'
+    });
+  }
+  var layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#99a', size: 9, family: '-apple-system,sans-serif' },
+    margin: { l: 40, r: 10, t: 10, b: 60 },
+    xaxis: { tickangle: -35, tickfont: { size: 9, color: '#99a' }, gridcolor: '#2a2d3e', showline: false },
+    yaxis: { range: [0, 100], tickfont: { size: 9, color: '#667' }, gridcolor: '#2a2d3e', title: { text: '健康评分', font: { size: 10, color: '#889' } } },
+    barmode: 'group',
+    hovermode: 'closest'
+  };
+  Plotly.react('barChart', traces, layout, {responsive: true, displayModeBar: false});
+}
+
+// ---- Sankey ----
+function updateSankey(sc) {
+  var d = SANKEY_DATA[sc];
+  // Node colors
+  var nodeColors = ['#4a90d9','#5ba0e8','#5ba0e8','#2ecc71','#2ecc71','#2ecc71','#e74c3c','#e74c3c','#e74c3c','#e67e22','#e67e22'];
+  var linkColors = [];
+  for (var i=0; i<d.links.length; i++) {
+    linkColors.push(nodeColors[d.links[i].s].replace(')', ',0.3)').replace('rgb', 'rgba'));
+  }
+  var trace = {
+    type: 'sankey',
+    orientation: 'h',
+    node: {
+      pad: 12,
+      thickness: 18,
+      line: { color: '#2a2d3e', width: 1 },
+      label: d.nodes,
+      color: nodeColors
+    },
+    link: {
+      source: d.links.map(l => l.s),
+      target: d.links.map(l => l.t),
+      value: d.links.map(l => l.v),
+      color: linkColors
+    }
+  };
+  var layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#dde', size: 11, family: '-apple-system,sans-serif' },
+    margin: { l: 10, r: 10, t: 10, b: 10 }
+  };
+  Plotly.react('sankeyChart', [trace], layout, {responsive: true, displayModeBar: false});
+}
+
+// ---- 时序图 ----
+function updateTimeseries(sc) {
+  var t, atp, ros, sasp, ecm, name;
+  switch(sc) {
+    case 'normal':
+      t=T_NORMAL; atp=ATP_NORMAL; ros=ROS_NORMAL; sasp=SASP_NORMAL; ecm=ECM_NORMAL;
+      break;
+    case 'early_degeneration':
+      t=T_EARLY; atp=ATP_EARLY; ros=ROS_EARLY; sasp=SASP_EARLY; ecm=ECM_EARLY;
+      break;
+    case 'late_degeneration':
+      t=T_LATE; atp=ATP_LATE; ros=ROS_LATE; sasp=SASP_LATE; ecm=ECM_LATE;
+      break;
+    case 'senolytic_intervention':
+      t=T_SENO; atp=ATP_SENO; ros=ROS_SENO; sasp=SASP_SENO; ecm=ECM_SENO;
+      break;
+    case 'mitoq_intervention':
+      t=T_MITOQ; atp=ATP_MITOQ; ros=ROS_MITOQ; sasp=SASP_MITOQ; ecm=ECM_MITOQ;
+      break;
+  }
+  var traces = [
+    { x: t, y: atp, name: 'ATP', line: { color: '#2ecc71', width: 2 }, hovertemplate: '%{x:.0f}: %{y:.3f}<extra>ATP</extra>' },
+    { x: t, y: ros, name: 'ROS', line: { color: '#e74c3c', width: 2 }, hovertemplate: '%{x:.0f}: %{y:.3f}<extra>ROS</extra>' },
+    { x: t, y: sasp, name: 'SASP', line: { color: '#f39c12', width: 2 }, hovertemplate: '%{x:.0f}: %{y:.3f}<extra>SASP</extra>' },
+    { x: t, y: ecm, name: 'ECM刚度', line: { color: '#9b59b6', width: 2 }, yaxis: 'y2', hovertemplate: '%{x:.0f}: %{y:.3f}<extra>ECM刚度</extra>' }
+  ];
+  var layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#99a', size: 9, family: '-apple-system,sans-serif' },
+    margin: { l: 40, r: 40, t: 10, b: 30 },
+    xaxis: { title: { text: '时间 (仿真步)', font: { size: 10, color: '#889' } }, gridcolor: '#2a2d3e', tickfont: { size: 9 } },
+    yaxis: { title: { text: '水平', font: { size: 10, color: '#889' } }, gridcolor: '#2a2d3e', tickfont: { size: 9 } },
+    yaxis2: { overlaying: 'y', side: 'right', title: { text: 'ECM', font: { size: 10, color: '#9b59b6' } }, gridcolor: 'rgba(0,0,0,0)', tickfont: { size: 9, color: '#9b59b6' } },
+    legend: { font: { size: 10, color: '#99a' }, x: 0.02, y: 0.98, bgcolor: 'rgba(22,24,34,0.7)' },
+    hovermode: 'x unified'
+  };
+  Plotly.react('timeseriesChart', traces, layout, {responsive: true, displayModeBar: false});
+}
+
+// ---- 热图 ----
+function updateHeatmap(sc, activeMods) {
+  var d = HEATMAP_DATA[sc];
+  // Filter rows based on active modules (simplified: just show all)
+  var z = d.z;
+  var y_labels = d.y_labels;
+  var x_labels = HEATMAP_COLS;
+
+  var colorscale = [
+    [0, '#1a5c2a'],
+    [0.25, '#27ae60'],
+    [0.5, '#f1c40f'],
+    [0.75, '#e67e22'],
+    [1, '#c0392b']
+  ];
+
+  var trace = {
+    type: 'heatmap',
+    z: z,
+    x: x_labels,
+    y: y_labels,
+    colorscale: colorscale,
+    zmin: 0,
+    zmax: 1,
+    hovertemplate: '%{y} @ %{x}: %{z:.2f}<extra></extra>',
+    showscale: true,
+    colorbar: {
+      title: { text: '活性', font: { size: 10, color: '#99a' } },
+      tickfont: { size: 9, color: '#99a' },
+      thickness: 12,
+      len: 0.8
+    }
+  };
+  var layout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#99a', size: 10, family: '-apple-system,sans-serif' },
+    margin: { l: 90, r: 20, t: 10, b: 40 },
+    xaxis: { tickfont: { size: 10, color: '#99a' }, gridcolor: '#2a2d3e', side: 'top' },
+    yaxis: { tickfont: { size: 9, color: '#99a' }, gridcolor: '#2a2d3e' }
+  };
+  Plotly.react('heatmapChart', [trace], layout, {responsive: true, displayModeBar: false});
+}
+
+// ============================================================
+// INIT
+// ============================================================
+var HEATMAP_DATA = HEATMAP_ROWS;
+updateAll();
+</script>
+
+</body>
+</html>

@@ -907,9 +907,44 @@ if _HAS_DRUG:
 else:
     print("  📦 虚拟药物筛选模块 (drug_screening.py) 未安装，跳过第17章")
 
-# ============ 18. 综合总结 ============
+# ============ 19. 多尺度整合器 ===========
 print("\n" + "=" * 60)
-print("  📊 第18章: 综合总结")
+print("  🧩 第19章: 多尺度整合器 (73维耦合)")
+print("=" * 60)
+try:
+    from simulation.multiscale_integrator import MultiScaleIntegrator
+    print("\n  多尺度整合器加载成功 ✅")
+    ms = MultiScaleIntegrator()
+
+    print("\n  [1] 运行正常状态下3次迭代耦合...")
+    res_normal = ms.run_coupled_iteration('normal', iterations=3)
+    state_normal = ms.get_integrated_state(res_normal)
+    print(f"      综合状态: 8组 {len(state_normal)} 个变量")
+
+    print("\n  [2] 三条件对比...")
+    summary = ms.compare_conditions(['normal', 'early_degeneration', 'late_degeneration'])
+
+    print("\n  [3] 干预模拟 (MitoQ)...")
+    try:
+        int_res = ms.simulate_intervention('MitoQ', strength=0.5, iterations=3)
+        print(f"      干预完成")
+    except Exception as e:
+        print(f"      干预模拟跳过: {e}")
+
+    print("\n  绘图...")
+    ms.plot_integrated_heatmap({'normal': state_normal}, output_path=f'{OUTPUT}/multiscale_heatmap.png')
+    ms.plot_feedback_convergence(res_normal, output_path=f'{OUTPUT}/multiscale_convergence.png')
+    print(f"      多尺度热图: {OUTPUT}/multiscale_heatmap.png")
+    print(f"      收敛曲线: {OUTPUT}/multiscale_convergence.png")
+
+    _HAS_INTEGRATOR = True
+except ImportError as e:
+    print(f"\n  📦 多尺度整合器模块 未安装，跳过第19章 ({e})")
+    _HAS_INTEGRATOR = False
+
+# ============ 20. 综合总结 ============
+print("\n" + "=" * 60)
+print("  📊 第18章: 多尺度整合器\n    · 第19章: 综合总结")
 print("=" * 60)
 
 print(f"\n  输出目录: {OUTPUT}")
@@ -921,7 +956,7 @@ for f in files:
     print(f"    · {f:40s} ({size:.1f} KB)")
 
 print("\n" + "=" * 60)
-print("  ✅ Virtual NP Cell System v3.0 Ready!")
+print("  ✅ Virtual NP Cell System v3.1 Ready!")
 print("\n  已集成模块:")
 v1_modules = [
     "第1章: 系统概览",
@@ -943,7 +978,7 @@ v2_modules = [
     "第15章: 空间转录组图谱",
     ("第16章: 多尺度耦合仿真" if _HAS_COUPLED else "第16章: 多尺度耦合 [未安装]"),
     ("第17章: 虚拟药物筛选" if _HAS_DRUG else "第17章: 虚拟药物筛选 [未安装]"),
-    "第18章: 综合总结",
+    "第18章: 多尺度整合器",
 ]
 for m in v1_modules + v2_modules:
     if '未安装' in m:

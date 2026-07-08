@@ -1,5 +1,5 @@
 """
-Virtual NP Cell — 虚拟髓核细胞主系统 v3.0
+Virtual NP Cell — 虚拟髓核细胞主系统 v3.1
 Orchestrator: 智能调度 + 功能路由 + 多模块编排
 ==================================================
 升级内容:
@@ -92,7 +92,7 @@ except (ImportError, ModuleNotFoundError):
     VirtualDrugScreening = None
     _HAS_DRUG = False
 
-# v3.0 新模块 — 线粒体动力学
+# v3.1 新模块 — 线粒体动力学
 try:
     from simulation.mitochondrial_dynamics import MitochondrialDynamicsModel
     _HAS_MITO = True
@@ -100,7 +100,7 @@ except (ImportError, ModuleNotFoundError):
     MitochondrialDynamicsModel = None
     _HAS_MITO = False
 
-# v3.0 新模块 — 亚细胞区室
+# v3.1 新模块 — 亚细胞区室
 try:
     from simulation.subcellular_compartments import SubcellularCompartmentsModel
     _HAS_SUBCELL = True
@@ -108,7 +108,7 @@ except (ImportError, ModuleNotFoundError):
     SubcellularCompartmentsModel = None
     _HAS_SUBCELL = False
 
-# v3.0 新模块 — mRNA/相分离
+# v3.1 新模块 — mRNA/相分离
 try:
     from regulation.rna_dynamics import RNADynamicsModel
     _HAS_RNA = True
@@ -116,13 +116,21 @@ except (ImportError, ModuleNotFoundError):
     RNADynamicsModel = None
     _HAS_RNA = False
 
+# v3.1 多尺度整合器
+try:
+    from simulation.multiscale_integrator import MultiScaleIntegrator
+    _HAS_INTEGRATOR = True
+except (ImportError, ModuleNotFoundError):
+    MultiScaleIntegrator = None
+    _HAS_INTEGRATOR = False
+
     VirtualDrugScreening = None
     _HAS_DRUG = False
 
 
 class VirtualNPCell:
     """
-    虚拟髓核细胞 — 主入口 v3.0
+    虚拟髓核细胞 — 主入口 v3.1
 
     功能:
     1. 差异表达分析 & 火山图
@@ -139,6 +147,7 @@ class VirtualNPCell:
     11. IVD 空间转录组模拟
     12. 多尺度耦合仿真 (可选)
     13. 虚拟药物筛选 (可选)
+    14. 多尺度整合器 (可选, 集成coupled+mito+subcell+rna)
     """
 
     def __init__(self):
@@ -161,6 +170,7 @@ class VirtualNPCell:
         self.mito_model = None
         self.subcellular_model = None
         self.rna_model = None
+        self.multiscale_integrator = None
 
         # 运行缓存
         self._module_results = {}
@@ -205,10 +215,11 @@ class VirtualNPCell:
             # 可选
             'couple': ('coupled_model', NPCoupledModel, _HAS_COUPLED),
             'drug_screen': ('drug_screening', VirtualDrugScreening, _HAS_DRUG),
-            # v3.0 亚细胞模块
+            # v3.1 亚细胞模块
             'mitochondrial': ('mito_model', MitochondrialDynamicsModel, _HAS_MITO),
             'subcellular': ('subcellular_model', SubcellularCompartmentsModel, _HAS_SUBCELL),
             'rna_dynamics': ('rna_model', RNADynamicsModel, _HAS_RNA),
+            'integrator': ('multiscale_integrator', MultiScaleIntegrator, _HAS_INTEGRATOR),
         }
 
         if module_name not in module_map:
@@ -335,6 +346,19 @@ class VirtualNPCell:
                 else:
                     result = {'info': 'subcellular module loaded but simulate() not available', 'model': model}
 
+            elif module_name == 'integrator':
+                if hasattr(model, 'run_coupled_iteration'):
+                    cond = kwargs.get('condition', 'normal')
+                    iters = kwargs.get('iterations', 3)
+                    sim_res = model.run_coupled_iteration(cond, iterations=iters)
+                    state = model.get_integrated_state(sim_res)
+                    result = {
+                        'result': sim_res, 'integrated_state': state,
+                        'condition': cond, 'model': model,
+                    }
+                else:
+                    result = {'info': 'integrator loaded but run_coupled_iteration not available', 'model': model}
+
             elif module_name == 'rna_dynamics':
                 if hasattr(model, 'simulate'):
                     pert = kwargs.get('perturbation', None)
@@ -459,9 +483,9 @@ class VirtualNPCell:
     # ==================== 状态摘要 ====================
 
     def status_summary(self) -> str:
-        """NP 细胞系统状态摘要 (v3.0 — 包含所有v2.0模块)"""
+        """NP 细胞系统状态摘要 (v3.1 — 包含所有v2.0模块)"""
         status_v1 = (
-            f"🧬 虚拟髓核细胞 (Virtual NP Cell) 系统状态 — v3.0\n"
+            f"🧬 虚拟髓核细胞 (Virtual NP Cell) 系统状态 — v3.1\n"
             f"{'='*55}\n"
             f"✓ 知识库: {sum(len(v) if isinstance(v, list) else 1 for v in self.kb.values())} 条记录\n"
             f"✓ 信号通路: {len(self.kb['signaling_pathways'])} 条核心通路\n"
@@ -665,11 +689,11 @@ def ensure_output_dir():
 # ==================== 自检 ====================
 
 if __name__ == "__main__":
-    print("Virtual NPCell v3.0 — 自检")
+    print("Virtual NPCell v3.1 — 自检")
     print("=" * 55)
     v = VirtualNPCell()
     print(v.status_summary())
     print("\n测试 run_module ('mechanotransduction'):")
     r = v.run_module('mechanotransduction', stiffness_level=1.0)
     print(f"  → {'✅' if r['success'] else '❌'} {r.get('error', '')}")
-    print("\n✅ Orchestrator v3.0 加载成功")
+    print("\n✅ Orchestrator v3.1 加载成功")
