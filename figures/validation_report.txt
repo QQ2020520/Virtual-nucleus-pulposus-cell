@@ -1,0 +1,68 @@
+================================================================================
+  Virtual NP Cell — Validation Against Published Literature
+================================================================================
+  Generated: 2026-07-22
+
+
+────────────────────────────────────────────────────────────────────────────────
+  [1] Signaling Pathway ODE Dynamics
+────────────────────────────────────────────────────────────────────────────────
+  Metric                                   Sim      Lit   Pass
+  ───────────────────────────────────────────────────────────
+  inflam_nfkb_activation                 3.78x     3.0x      ✓
+  inflam_mmp_increase                    1.11x     4.0x      ✗
+  hypoxia_hif1_stabilization             1.38x     2.5x      ✗
+
+────────────────────────────────────────────────────────────────────────────────
+  [2] MRTF-A Mechano-Glycolysis Coupling (Bone Research 2025)
+────────────────────────────────────────────────────────────────────────────────
+  Metric                                   Sim      Lit   Pass
+  ───────────────────────────────────────────────────────────
+  mrtfa_stiffness_fold                   2.95x     3.5x      ✓
+  mrtfa_glycolysis_decrease              30.1%    45.0%      ✓
+  mrtfa_ccg_rescue                      100.7%    65.0%      ✗
+
+────────────────────────────────────────────────────────────────────────────────
+  [3] ECM Metabolism & Degradation
+────────────────────────────────────────────────────────────────────────────────
+  Metric                                   Sim      Lit   Pass
+  ───────────────────────────────────────────────────────────
+  ecm_aggrecan_loss                      71.6%    70.0%      ✓
+  ecm_mmp_ratio_increase                  2.3%     3.0%      ✓
+  ecm_np_cell_loss                       52.6%    60.0%      ✓
+
+────────────────────────────────────────────────────────────────────────────────
+  [4] Epigenetic Senescence (SETD1A/H3K4me3 — Advanced Science 2026)
+────────────────────────────────────────────────────────────────────────────────
+  Metric                                   Sim      Lit   Pass
+  ───────────────────────────────────────────────────────────
+  setd1a_kd_h3k4me3                      54.3%    60.0%      ✓
+  setd1a_kd_senescence                    1.2x     3.0x      ✗
+  setd1a_oe_protection                    1.1%    40.0%      ✗
+
+================================================================================
+  Validation Summary
+────────────────────────────────────────────────────────────────────────────────
+  Total metrics:         12
+  Passed:                7
+  Pass rate:             58.3% (7/12)
+  Status:                ⚠️ 5 metric(s) outside expected range
+
+  References:
+    Bone Research 2025 — MRTF-A mechano-glycolysis in IDD
+    Advanced Science 2026 — SETD1A/H3K4me3 NP senescence
+    GSE205535, GSE150408 — NP degeneration transcriptomics
+    Spine J 2018 — IDD biomarker meta-analysis
+    OAC 2020 — ECM enzyme expression in IDD
+    Nature Comms 2023 — NP single-cell atlas
+================================================================================
+
+Quantitative Validation Statistics:
+  n_metrics: 12
+  pearson_r: 0.88
+  pearson_p: 1.60e-04
+  spearman_r: 0.702
+  spearman_p: 1.09e-02
+  mae: 9.34
+  mape: 37.6
+  r_squared: 0.664
